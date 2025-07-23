@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Servicio para MySQL
+  mysql-db:
+    image: mysql:8.0 # O la versión de MySQL que prefieras
+    container_name: blackjack_mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: mysecretpassword # <-- ¡Cambia esta contraseña! Debe coincidir con application.yml
+      MYSQL_DATABASE: blackjack_mysql
+    ports:
+      - "3307:3306" # Mapea el puerto 3306 del contenedor al 3306 de tu máquina local
+    volumes:
+      - mysql_data:/var/lib/mysql # Persistencia de datos para MySQL
+    networks:
+      - blackjack_network
+
+  # Servicio para MongoDB
+  mongodb-db:
+    image: mongo:latest # O una versión específica, por ejemplo, mongo:6.0
+    container_name: blackjack_mongodb_container
+    ports:
+      - "27017:27017" # Mapea el puerto 27017 del contenedor al 27017 de tu máquina local
+    volumes:
+      - mongodb_data:/data/db # Persistencia de datos para MongoDB
+    networks:
+      - blackjack_network
+
+  # Servicio para tu aplicación Spring Boot
+  blackjack-app:
+    build: . # Busca el Dockerfile en el directorio actual para construir la imagen
+    container_name: blackjack_api_container
+    ports:
+      - "8080:8080" # Mapea el puerto 8080 del contenedor al 8080 de tu máquina local
+    # Se ha eliminado la sección 'environment:' que causaba el error,
+    # ya que las configuraciones ya están en application.yml
+    depends_on:
+      - mysql-db    # Asegura que MySQL se inicie antes que la app
+      - mongodb-db  # Asegura que MongoDB se inicie antes que la app
+    networks:
+      - blackjack_network
+
+# Definición de volúmenes para persistencia de datos
+volumes:
+  mysql_data:
+  mongodb_data:
+
+# Definición de una red personalizada para que los servicios se comuniquen por nombre
+networks:
+  blackjack_network:
+    driver: bridge
